@@ -2,11 +2,8 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-
-  <!-- 🔑 MOBİL İÇİN EN ÖNEMLİ SATIR -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Fotoğraf + Video Seçme</title>
+  <title>Cloudinary Medya Yükle</title>
 
   <style>
     body {
@@ -24,7 +21,23 @@
       width: 100%;
       padding: 12px;
       font-size: 16px;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2196F3;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+
+    button:disabled {
+      background-color: #999;
     }
 
     #preview {
@@ -41,46 +54,90 @@
       border: 1px solid #ccc;
       background: #000;
     }
+
+    .status {
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
-  <h2><i>Fotoğraf ve Video Seç</i></h2>
+  <h2><i>Fotoğraf ve Video Seçiniz</i></h2>
 
-  <!-- 📸 Kamera + 🎥 Video + 🖼️ Galeri -->
   <input
     type="file"
     id="media"
     accept="image/*,video/*"
     multiple
-    capture
   >
 
+  <button id="uploadBtn" disabled>Yükle</button>
+
+  <div class="status" id="status"></div>
   <div id="preview"></div>
 
   <script>
+    const CLOUD_NAME = "YOUR_CLOUD_NAME";
+    const UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+
     const input = document.getElementById("media");
     const preview = document.getElementById("preview");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const statusText = document.getElementById("status");
+
+    let selectedFiles = [];
 
     input.addEventListener("change", () => {
       preview.innerHTML = "";
+      statusText.textContent = "";
+      selectedFiles = Array.from(input.files);
+      uploadBtn.disabled = selectedFiles.length === 0;
 
-      Array.from(input.files).forEach(file => {
+      selectedFiles.forEach(file => {
         const url = URL.createObjectURL(file);
 
         if (file.type.startsWith("image/")) {
           const img = document.createElement("img");
           img.src = url;
           preview.appendChild(img);
-        } 
-        else if (file.type.startsWith("video/")) {
+        } else if (file.type.startsWith("video/")) {
           const video = document.createElement("video");
           video.src = url;
           video.controls = true;
-          video.playsInline = true; // iOS için şart
+          video.playsInline = true;
           preview.appendChild(video);
         }
       });
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      uploadBtn.disabled = true;
+      statusText.textContent = "Yükleniyor...";
+
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        const resourceType = file.type.startsWith("video/")
+          ? "video"
+          : "image";
+
+        await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+      }
+
+      statusText.textContent = "Yükleme tamamlandı ✅";
+      preview.innerHTML = "";
+      input.value = "";
+      selectedFiles = [];
     });
   </script>
 
