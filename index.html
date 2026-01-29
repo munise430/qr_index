@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cloudinary Medya Yükle</title>
+  <title>Cloudinary Yükle & Göster</title>
 
   <style>
     body {
@@ -21,7 +21,7 @@
       width: 100%;
       padding: 12px;
       font-size: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     button {
@@ -33,14 +33,26 @@
       background-color: #2196F3;
       color: white;
       cursor: pointer;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     button:disabled {
       background-color: #999;
     }
 
-    #preview {
+    .status {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin-top: 20px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    #preview, #uploaded {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 10px;
@@ -53,12 +65,6 @@
       border-radius: 10px;
       border: 1px solid #ccc;
       background: #000;
-    }
-
-    .status {
-      text-align: center;
-      margin-bottom: 10px;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -76,7 +82,12 @@
   <button id="uploadBtn" disabled>Yükle</button>
 
   <div class="status" id="status"></div>
+
+  <div class="section-title">📥 Seçilenler (önizleme)</div>
   <div id="preview"></div>
+
+  <div class="section-title">☁️ Yüklenenler</div>
+  <div id="uploaded"></div>
 
   <script>
     const CLOUD_NAME = "dea35ka7n";
@@ -84,6 +95,7 @@
 
     const input = document.getElementById("media");
     const preview = document.getElementById("preview");
+    const uploaded = document.getElementById("uploaded");
     const uploadBtn = document.getElementById("uploadBtn");
     const statusText = document.getElementById("status");
 
@@ -125,13 +137,28 @@
           ? "video"
           : "image";
 
-        await fetch(
+        const res = await fetch(
           `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
           {
             method: "POST",
             body: formData
           }
         );
+
+        const data = await res.json();
+
+        // 🔥 YÜKLENENİ GÖSTER
+        if (resourceType === "image") {
+          const img = document.createElement("img");
+          img.src = data.secure_url;
+          uploaded.appendChild(img);
+        } else {
+          const video = document.createElement("video");
+          video.src = data.secure_url;
+          video.controls = true;
+          video.playsInline = true;
+          uploaded.appendChild(video);
+        }
       }
 
       statusText.textContent = "Yükleme tamamlandı ✅";
@@ -143,4 +170,5 @@
 
 </body>
 </html>
+
 
