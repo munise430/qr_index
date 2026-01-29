@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotoğraf & Video Yükle</title>
+</head>
+<body bgcolor="pink">
+
+<h2><i>Fotoğraf Yükleyiniz</i></h2>
+
+<table width="100%">
+<tr>
+<td>
+<input type="file" id="fileInput" accept="image/*">
+</td>
+</tr>
+<tr>
+<td><br>
+<button onclick="upload()" style="width:100%;"><big>Fotoğraf Yükle</big></button>
+</td>
+</tr>
+</table>
+
+<p id="msg"></p>
+<hr>
+
+<h2><i>Video Yükleyiniz</i></h2>
+
+<table width="100%">
+<tr>
+<td>
+<input type="file" id="videoInput" accept="video/*">
+</td>
+</tr>
+<tr>
+<td><br>
+<button onclick="uploadVideo()" style="width:100%;"><big>Video Yükle</big></button>
+</td>
+</tr>
+</table>
+
+<p id="msgVideo"></p>
+
+<script>
+function upload() {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "melosxyz");
+
+  fetch("https://api.cloudinary.com/v1_1/dea35ka7n/image/upload", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("msg").innerHTML = 
+      `Fotoğrafınız yüklendi 👍<br>
+       <a href="${data.secure_url}" target="_blank">Fotoğrafı Görüntüle</a>`;
+  })
+  .catch(() => {
+    document.getElementById("msg").innerText = "Hata oluştu ❌";
+  });
+}
+
+function uploadVideo() {
+  const file = document.getElementById("videoInput").files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", "melosxyz");
+
+  fetch("https://api.cloudinary.com/v1_1/dea35ka7n/video/upload", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("msgVideo").innerHTML = 
+      `Video yüklendi 👍<br>
+       <a href="${data.secure_url}" target="_blank">Videoyu Görüntüle</a>`;
+  })
+  .catch(() => {
+    document.getElementById("msgVideo").innerText = "Hata oluştu ❌";
+  });
+}
+</script>
+
+</body>
+</html>
