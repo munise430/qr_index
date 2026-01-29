@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medya Yükle + Not</title>
+  <title>Cloudinary Yükle + Not</title>
 
   <style>
     body {
@@ -22,10 +22,9 @@
       min-height: 80px;
       padding: 10px;
       font-size: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      resize: vertical;
     }
 
     input[type="file"] {
@@ -58,8 +57,7 @@
     }
 
     .section-title {
-      margin-top: 20px;
-      margin-bottom: 8px;
+      margin: 16px 0 8px;
       font-weight: bold;
     }
 
@@ -97,7 +95,6 @@
 
   <h2><i>Medya Yükle + Not</i></h2>
 
-  <!-- ✍️ NOT KUTUSU -->
   <textarea id="note" placeholder="İstersen buraya bir not yazabilirsin..."></textarea>
 
   <input
@@ -130,6 +127,48 @@
 
     let selectedFiles = [];
 
+    // 🔹 localStorage yardımcıları
+    function saveToLocal(item) {
+      const list = JSON.parse(localStorage.getItem("uploads")) || [];
+      list.push(item);
+      localStorage.setItem("uploads", JSON.stringify(list));
+    }
+
+    function loadFromLocal() {
+      const list = JSON.parse(localStorage.getItem("uploads")) || [];
+      list.forEach(createCard);
+    }
+
+    function createCard(item) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      if (item.type === "image") {
+        const img = document.createElement("img");
+        img.src = item.url;
+        card.appendChild(img);
+      } else {
+        const video = document.createElement("video");
+        video.src = item.url;
+        video.controls = true;
+        video.playsInline = true;
+        card.appendChild(video);
+      }
+
+      if (item.note) {
+        const noteDiv = document.createElement("div");
+        noteDiv.className = "note";
+        noteDiv.textContent = item.note;
+        card.appendChild(noteDiv);
+      }
+
+      uploaded.appendChild(card);
+    }
+
+    // 🔹 Sayfa açılınca eskileri yükle
+    window.addEventListener("load", loadFromLocal);
+
+    // 🔹 Dosya seçimi
     input.addEventListener("change", () => {
       preview.innerHTML = "";
       statusText.textContent = "";
@@ -143,7 +182,7 @@
           const img = document.createElement("img");
           img.src = url;
           preview.appendChild(img);
-        } else if (file.type.startsWith("video/")) {
+        } else {
           const video = document.createElement("video");
           video.src = url;
           video.controls = true;
@@ -153,6 +192,7 @@
       });
     });
 
+    // 🔹 Yükle
     uploadBtn.addEventListener("click", async () => {
       uploadBtn.disabled = true;
       statusText.textContent = "Yükleniyor...";
@@ -164,44 +204,23 @@
         formData.append("file", file);
         formData.append("upload_preset", UPLOAD_PRESET);
 
-        const resourceType = file.type.startsWith("video/")
-          ? "video"
-          : "image";
+        const type = file.type.startsWith("video/") ? "video" : "image";
 
         const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`,
-          {
-            method: "POST",
-            body: formData
-          }
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${type}/upload`,
+          { method: "POST", body: formData }
         );
 
         const data = await res.json();
 
-        // 🧩 KART OLUŞTUR
-        const card = document.createElement("div");
-        card.className = "card";
+        const item = {
+          url: data.secure_url,
+          type: type,
+          note: noteText
+        };
 
-        if (resourceType === "image") {
-          const img = document.createElement("img");
-          img.src = data.secure_url;
-          card.appendChild(img);
-        } else {
-          const video = document.createElement("video");
-          video.src = data.secure_url;
-          video.controls = true;
-          video.playsInline = true;
-          card.appendChild(video);
-        }
-
-        if (noteText) {
-          const noteDiv = document.createElement("div");
-          noteDiv.className = "note";
-          noteDiv.textContent = noteText;
-          card.appendChild(noteDiv);
-        }
-
-        uploaded.appendChild(card);
+        saveToLocal(item);
+        createCard(item);
       }
 
       statusText.textContent = "Yükleme tamamlandı ✅";
@@ -214,6 +233,7 @@
 
 </body>
 </html>
+
 
 
 
