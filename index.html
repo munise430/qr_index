@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medya + Not Gönder</title>
+  <title>Medya Cloudinary + Not Dosya</title>
 
   <style>
     body {
@@ -11,6 +11,10 @@
       padding: 16px;
       margin: 0;
       background: pink;
+    }
+
+    h2 {
+      text-align: center;
     }
 
     input, textarea, button {
@@ -26,6 +30,7 @@
       background: #2196F3;
       color: white;
       border: none;
+      cursor: pointer;
     }
 
     .card {
@@ -47,22 +52,22 @@
       font-weight: bold;
       margin-bottom: 4px;
     }
-
-    .note {
-      background: #f2f2f2;
-      padding: 6px;
-      border-radius: 6px;
-      margin-top: 6px;
-    }
   </style>
 </head>
 <body>
 
-  <h2>📤 Medya & 📝 Not Gönder</h2>
+  <h2>📤 Medya Gönder + 📝 Not</h2>
 
-  <input type="text" id="username" placeholder="Adın (zorunlu)">
+  <input
+    type="text"
+    id="username"
+    placeholder="Adın (zorunlu)"
+  >
 
-  <textarea id="note" placeholder="Notunu yaz..."></textarea>
+  <textarea
+    id="note"
+    placeholder="Notunu yaz (dosya olarak inecek)..."
+  ></textarea>
 
   <input
     type="file"
@@ -71,12 +76,12 @@
     multiple
   >
 
-  <button id="uploadBtn">📤 Medya Yükle</button>
-  <button id="noteBtn">📝 Not Gönder</button>
+  <button id="uploadBtn">📤 Medyayı Yükle</button>
+  <button id="noteBtn">📝 Notu Dosya Olarak Kaydet</button>
 
   <hr>
 
-  <h3>📥 Gönderilenler</h3>
+  <h3>☁️ Yüklenen Medyalar</h3>
   <div id="list"></div>
 
   <script>
@@ -88,73 +93,49 @@
     const mediaInput = document.getElementById("media");
     const list = document.getElementById("list");
 
-    function save(item) {
-      const arr = JSON.parse(localStorage.getItem("messages")) || [];
-      arr.push(item);
-      localStorage.setItem("messages", JSON.stringify(arr));
+    // 📄 NOTU DOSYA OLARAK İNDİR
+    function downloadNoteAsFile(user, note) {
+      if (!note) return;
+
+      const date = new Date().toLocaleString("tr-TR");
+
+      const text =
+`Gönderen: ${user}
+Tarih: ${date}
+
+Not:
+${note}
+`;
+
+      const blob = new Blob([text], {
+        type: "text/plain;charset=utf-8"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `not-${Date.now()}.txt`;
+
+      document.body.appendChild(a);
+      a.click();
+
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
-    function load() {
-      const arr = JSON.parse(localStorage.getItem("messages")) || [];
-      arr.forEach(render);
-    }
-
-    function render(item) {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      card.innerHTML = `
-        <div class="name">👤 ${item.user}</div>
-        ${item.note ? `<div class="note">📝 ${item.note}</div>` : ""}
-      `;
-
-      if (item.url) {
-        if (item.type === "image") {
-          const img = document.createElement("img");
-          img.src = item.url;
-          card.appendChild(img);
-        } else {
-          const video = document.createElement("video");
-          video.src = item.url;
-          video.controls = true;
-          card.appendChild(video);
-        }
-      }
-
-      list.prepend(card);
-    }
-
-    // Sayfa açılınca
-    load();
-
-    // 📝 Not gönder
-    document.getElementById("noteBtn").onclick = () => {
-      const user = usernameInput.value.trim();
-      const note = noteInput.value.trim();
-
-      if (!user || !note) {
-        alert("Ad ve not zorunlu");
-        return;
-      }
-
-      const item = { user, note };
-      save(item);
-      render(item);
-      noteInput.value = "";
-    };
-
-    // 📤 Medya yükle
+    // ☁️ MEDYA YÜKLE
     document.getElementById("uploadBtn").onclick = async () => {
       const user = usernameInput.value.trim();
       const files = mediaInput.files;
 
       if (!user || files.length === 0) {
-        alert("Ad ve medya zorunlu");
+        alert("Ad ve en az 1 medya seçmelisin");
         return;
       }
 
       for (const file of files) {
         const type = file.type.startsWith("video") ? "video" : "image";
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", UPLOAD_PRESET);
@@ -166,22 +147,46 @@
 
         const data = await res.json();
 
-        const item = {
-          user,
-          url: data.secure_url,
-          type
-        };
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<div class="name">👤 ${user}</div>`;
 
-        save(item);
-        render(item);
+        if (type === "image") {
+          const img = document.createElement("img");
+          img.src = data.secure_url;
+          card.appendChild(img);
+        } else {
+          const video = document.createElement("video");
+          video.src = data.secure_url;
+          video.controls = true;
+          card.appendChild(video);
+        }
+
+        list.prepend(card);
       }
 
       mediaInput.value = "";
+    };
+
+    // 📝 NOT GÖNDER
+    document.getElementById("noteBtn").onclick = () => {
+      const user = usernameInput.value.trim();
+      const note = noteInput.value.trim();
+
+      if (!user || !note) {
+        alert("Ad ve not zorunlu");
+        return;
+      }
+
+      downloadNoteAsFile(user, note);
+      noteInput.value = "";
     };
   </script>
 
 </body>
 </html>
+
+
 
 
 
