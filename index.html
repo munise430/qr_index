@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medya Cloudinary + Not Dosya</title>
+  <title>Medya + Not Gönder</title>
 
   <style>
     body {
@@ -52,11 +52,18 @@
       font-weight: bold;
       margin-bottom: 4px;
     }
+
+    .note {
+      background: #f2f2f2;
+      padding: 8px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
 
-  <h2>📤 Medya Gönder + 📝 Not</h2>
+  <h2>📤 Medya + 📝 Not Gönder</h2>
 
   <input
     type="text"
@@ -66,7 +73,7 @@
 
   <textarea
     id="note"
-    placeholder="Notunu yaz (dosya olarak inecek)..."
+    placeholder="Notunu yaz..."
   ></textarea>
 
   <input
@@ -76,97 +83,67 @@
     multiple
   >
 
-  <button id="uploadBtn">📤 Medyayı Yükle</button>
-  <button id="noteBtn">📝 Notu Dosya Olarak Kaydet</button>
+  <button id="uploadBtn">📸 Medyayı Yükle</button>
+  <button id="noteBtn">📝 Notu Gönder</button>
 
   <hr>
 
-  <h3>☁️ Yüklenen Medyalar</h3>
+  <h3>📥 Gönderilenler</h3>
   <div id="list"></div>
 
   <script>
     const CLOUD_NAME = "dea35ka7n";
     const UPLOAD_PRESET = "melosxyz";
+    const ADMIN_EMAIL = "amyd212103@gmail.com";
 
     const usernameInput = document.getElementById("username");
     const noteInput = document.getElementById("note");
     const mediaInput = document.getElementById("media");
     const list = document.getElementById("list");
 
-    // 📄 NOTU DOSYA OLARAK İNDİR
-    function downloadNoteAsFile(user, note) {
-      if (!note) return;
-
-      const date = new Date().toLocaleString("tr-TR");
-
-      const text =
-`Gönderen: ${user}
-Tarih: ${date}
-
-Not:
-${note}
-`;
-
-      const blob = new Blob([text], {
-        type: "text/plain;charset=utf-8"
-      });
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `not-${Date.now()}.txt`;
-
-      document.body.appendChild(a);
-      a.click();
-
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    // 🧠 localStorage
+    function save(item) {
+      const arr = JSON.parse(localStorage.getItem("messages")) || [];
+      arr.push(item);
+      localStorage.setItem("messages", JSON.stringify(arr));
     }
 
-    // ☁️ MEDYA YÜKLE
-    document.getElementById("uploadBtn").onclick = async () => {
-      const user = usernameInput.value.trim();
-      const files = mediaInput.files;
+    function load() {
+      const arr = JSON.parse(localStorage.getItem("messages")) || [];
+      arr.forEach(render);
+    }
 
-      if (!user || files.length === 0) {
-        alert("Ad ve en az 1 medya seçmelisin");
-        return;
+    function render(item) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `<div class="name">👤 ${item.user}</div>`;
+
+      if (item.note) {
+        const n = document.createElement("div");
+        n.className = "note";
+        n.textContent = item.note;
+        card.appendChild(n);
       }
 
-      for (const file of files) {
-        const type = file.type.startsWith("video") ? "video" : "image";
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", UPLOAD_PRESET);
-
-        const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${type}/upload`,
-          { method: "POST", body: formData }
-        );
-
-        const data = await res.json();
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `<div class="name">👤 ${user}</div>`;
-
-        if (type === "image") {
+      if (item.url) {
+        if (item.type === "image") {
           const img = document.createElement("img");
-          img.src = data.secure_url;
+          img.src = item.url;
           card.appendChild(img);
         } else {
           const video = document.createElement("video");
-          video.src = data.secure_url;
+          video.src = item.url;
           video.controls = true;
           card.appendChild(video);
         }
-
-        list.prepend(card);
       }
 
-      mediaInput.value = "";
-    };
+      list.prepend(card);
+    }
+
+    // 🔄 Sayfa açılınca
+    load();
 
     // 📝 NOT GÖNDER
     document.getElementById("noteBtn").onclick = () => {
@@ -178,13 +155,64 @@ ${note}
         return;
       }
 
-      downloadNoteAsFile(user, note);
+      const item = { user, note };
+      save(item);
+      render(item);
+
+      // 📧 MAIL AÇ
+      const mailBody =
+`Gönderen: ${user}
+
+Not:
+${note}`;
+
+      window.location.href =
+        `mailto:${ADMIN_EMAIL}?subject=Yeni Not&body=${encodeURIComponent(mailBody)}`;
+
       noteInput.value = "";
+    };
+
+    // 📸 MEDYA YÜKLE
+    document.getElementById("uploadBtn").onclick = async () => {
+      const user = usernameInput.value.trim();
+      const files = mediaInput.files;
+
+      if (!user || files.length === 0) {
+        alert("Ad ve en az 1 medya seçmelisin");
+        return;
+      }
+
+      for (const file of files) {
+        const type = file.type.startsWith("video") ? "video" : "image";
+        const formData = new FormData();
+
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${type}/upload`,
+          { method: "POST", body: formData }
+        );
+
+        const data = await res.json();
+
+        const item = {
+          user,
+          url: data.secure_url,
+          type
+        };
+
+        save(item);
+        render(item);
+      }
+
+      mediaInput.value = "";
     };
   </script>
 
 </body>
 </html>
+
 
 
 
