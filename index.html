@@ -103,7 +103,7 @@
     const mediaInput = document.getElementById("media");
     const list = document.getElementById("list");
 
-    // 🧠 localStorage
+    // localStorage
     function save(item) {
       const arr = JSON.parse(localStorage.getItem("messages")) || [];
       arr.push(item);
@@ -119,7 +119,7 @@
       const card = document.createElement("div");
       card.className = "card";
 
-      card.innerHTML = `<div class="name">👤 ${item.user}</div>`;
+      card.innerHTML = `<div class="name"> ${item.user}</div>`;
 
       if (item.note) {
         const n = document.createElement("div");
@@ -144,10 +144,10 @@
       list.prepend(card);
     }
 
-    // 🔄 Sayfa açılınca
+    //  Sayfa açılınca
     load();
 
-    // 📝 NOT GÖNDER
+    //  NOT GÖNDER
     document.getElementById("noteBtn").onclick = () => {
       const user = usernameInput.value.trim();
       const note = noteInput.value.trim();
@@ -161,7 +161,7 @@
       save(item);
       render(item);
 
-      // 📧 MAIL AÇ
+      //  MAIL AÇ
       const mailBody =
 `Gönderen: ${user}
 
@@ -174,7 +174,7 @@ ${note}`;
       noteInput.value = "";
     };
 
-    // 📸 MEDYA YÜKLE
+    // MEDYA YÜKLE
     document.getElementById("uploadBtn").onclick = async () => {
       const user = usernameInput.value.trim();
       const files = mediaInput.files;
